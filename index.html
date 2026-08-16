@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كويز STEP التفاعلي - مراجعة الأخطاء</title>
+    <!-- خط Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-red: #d32f2f;
+            --dark-red: #8b0000;
+            --light-red: #ffebee;
+            --correct-yellow: #fff9c4;
+            --correct-border: #fbc02d;
+            --wrong-red: #ffcdd2;
+            --wrong-border: #e53935;
+            --text-dark: #2c3e50;
+            --bg-body: #fbfbfb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background: linear-gradient(135deg, var(--dark-red), var(--primary-red));
+            color: white;
+            text-align: center;
+            padding: 25px 15px;
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.25);
+            animation: fadeInDown 0.6s ease;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes pulseBtn {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4); }
+            100% { transform: scale(1); }
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 900;
+        }
+
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0 10px;
+            width: 100%;
+            max-width: 650px;
+            padding: 0 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 2px solid var(--primary-red);
+            border-radius: 10px;
+            background: white;
+            color: var(--primary-red);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-red);
+            color: white;
+            box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3);
+        }
+
+        .quiz-wrapper {
+            width: 100%;
+            max-width: 750px;
+            padding: 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border-top: 5px solid var(--primary-red);
+            animation: popIn 0.4s ease;
+            position: relative;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: #eee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-red);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .q-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--dark-red);
+            margin-bottom: 15px;
+        }
+
+        .q-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            direction: ltr;
+            text-align: left;
+            line-height: 1.5;
+            color: #111;
+        }
+
+        .options-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .option-btn {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary-red);
+            background-color: var(--light-red);
+        }
+
+        /* الحالات بعد الإجابة */
+        .option-btn.correct-ans {
+            background-color: var(--correct-yellow) !important;
+            border-color: var(--correct-border) !important;
+            color: #5d4037 !important;
+            font-weight: 700;
+        }
+
+        .option-btn.prev-wrong-ans {
+            background-color: var(--wrong-red) !important;
+            border-color: var(--wrong-border) !important;
+            color: var(--dark-red) !important;
+            text-decoration: line-through;
+        }
+
+        .option-btn.user-picked {
+            outline: 3px solid #1976d2;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            direction: rtl;
+            font-weight: 700;
+        }
+
+        .badge-correct { background: #fbc02d; color: #000; }
+        .badge-prev { background: #e53935; color: #fff; }
+        .badge-user { background: #1976d2; color: #fff; }
+
+        .footer-controls {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .next-btn {
+            padding: 12px 30px;
+            background-color: var(--primary-red);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: none;
+            animation: pulseBtn 2s infinite;
+        }
+
+        .next-btn:hover {
+            background-color: var(--dark-red);
+        }
+
+        .result-box {
+            text-align: center;
+            padding: 30px 10px;
+        }
+        .result-box h2 {
+            color: var(--dark-red);
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>كويز STEP التفاعلي</h1>
+        <p>مراجعة شاملة للأخطاء بنظام السؤال الفردي</p>
+    </header>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" id="tab-grammar" onclick="changeSection('grammar')">قسم القواعد (Grammar)</button>
+        <button class="tab-btn" id="tab-reading" onclick="changeSection('reading')">قسم القراءة (Reading)</button>
+    </div>
+
+    <div class="quiz-wrapper">
+        <div class="card" id="quiz-card">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+
+            <div class="q-meta">
+                <span id="question-count">السؤال 1 من --</span>
+                <span id="original-num">الرمز الأصلي: --</span>
+            </div>
+
+            <div class="q-text" id="question-text">نص السؤال يظهر هنا...</div>
+
+            <div class="options-list" id="options-container">
+                <!-- أزرار الخيارات -->
+            </div>
+
+            <div class="footer-controls">
+                <div id="feedback-msg" style="font-weight: 700;"></div>
+                <button class="next-btn" id="next-btn" onclick="nextQuestion()">السؤال التالي ←</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const grammarQuestions = [
+            { num: "62", q: "In which sentence is all PUNCTUATION correct?", opts: ["A) Instead of taking the elevator to the top I decided to take the stairs.", "B) Instead of taking the elevator to the top; I decided to take the stairs.", "C) Instead of taking the elevator to the top! I decided to take the stairs.", "D) Instead of taking the elevator to the top, I decided to take the stairs."], ans: 3, prevWrong: 2 },
+            { num: "74", q: "Which one of the underlined words or phrases is INCORRECT?\nThe decision to go nor stay was difficult to reach.", opts: ["A) to go", "B) nor", "C) was", "D) to reach"], ans: 1, prevWrong: 0 },
+            { num: "68", q: "Ali is fixing his brother's bicycle, and he...........some help. Can you help him?", opts: ["A) is needing", "B) needed", "C) needs", "D) needs"], ans: 2, prevWrong: 3 },
+            { num: "63", q: "Let's meet...........9.00 a.m.", opts: ["A) at", "B) in", "C) on", "D) to"], ans: 0, prevWrong: 2 },
+            { num: "85", q: "Which one of the underlined words or phrases is INCORRECT?\nEither the chocolate cake or the lemon pie are going to be served for dessert after dinner tonight, Which one do you prefer?", opts: ["A) Either", "B) are going", "C) one", "D) prefer"], ans: 1, prevWrong: 0 },
+            { num: "62", q: "When you were in Paris last year, ........... the Eiffel Tower?", opts: ["A) have you visited", "B) were you visit", "C) did you visit", "D) you visited"], ans: 2, prevWrong: 0 },
+            { num: "100", q: "............we were not allowed to take the test, was annoying", opts: ["A) That", "B) since", "C) After", "D) Because"], ans: 0, prevWrong: 1 },
+            { num: "98", q: "The computer graphics course that ............. this semester is taught by the same teacher who teaches IT", opts: ["A) offered", "B) be offered", "C) is offering", "D) is being offered"], ans: 3, prevWrong: 0 },
+            { num: "78", q: "The bookseller has many books that............. Outdated.", opts: ["A) are", "B) is", "C) am", "D) were"], ans: 0, prevWrong: 3 },
+            { num: "66", q: "In which sentence is all PUNCTUATION correct?", opts: ["A) Many people enjoy camping in the desert during the winter months there are some things that you should prepare to take with you including water food tents and extra jackets.", "B) Many people enjoy camping in the desert during the winter months; there are some things that you should prepare to take with you, including water, food, tents, and extra jackets.", "C) Many people in joy camping in the desert during the winter months: There are some things, that you should prepare to take with you including, water, food, tens, and extra jackets.", "D) Many people enjoy camping in the desert during the winter months; there are some things that you should prepare to take with you including water, food, tents, and extra jackets"], ans: 1, prevWrong: 2 },
+            { num: "67", q: "Mr. Smith just ...... his new book last week, he hopes it will be successful", opts: ["A) publish", "B) published", "C) publishing", "D) has published"], ans: 1, prevWrong: 3 },
+            { num: "81", q: "You look tired today. ...........all night?", opts: ["A) Do you work", "B) Have you work", "C) Are you working", "D) Have you been working"], ans: 3, prevWrong: 1 },
+            { num: "91", q: "Ask Mary if she knows where .............", opts: ["A) your wallet put you", "B) your wallet you put", "C) put you your wallet", "D) you put your wallet"], ans: 3, prevWrong: 0 },
+            { num: "91", q: "If they ............ with a guarantee, they would be able to get it fixed now.", opts: ["A) purchased", "B) will purchase", "C) had purchased", "D) purchases"], ans: 0, prevWrong: 2 },
+            { num: "81", q: "All necessary material to do the job ...............", opts: ["A) have provided", "B) will provide", "C) will be provided", "D) are being provided"], ans: 2, prevWrong: 0 },
+            { num: "87", q: "Tom's car broke down, so he's ............ He didn't know how to fix it himself.", opts: ["A) got it fixing", "B) had it fixed", "C) been it fixing", "D) done it fixed"], ans: 1, prevWrong: 0 },
+            { num: "Dialogue", q: "(At an airport: Immigration)\nA: Where are you staying?\nB: At the Fairmont Hotel.\nA: Do you know anybody here?\nB: Yes, Mike Bennett.\nA: Is he family or a friend?\nB: He's ............ a colleague ............ a friend. We've worked together for four years now", opts: ["A) either / or", "B) neither / nor", "C) as / as", "D) both / and"], ans: 3, prevWrong: 1 },
+            { num: "87", q: "Mr. Mike asked Ben if he ............ better at night or in the morning.", opts: ["A) studied", "B) study", "C) studying", "D) has studied"], ans: 0, prevWrong: 1 },
+            { num: "66", q: "The teacher might have accepted my late essay if I ...... him yesterday.", opts: ["A) told", "B) would ask", "C) had asked", "D) has asked"], ans: 0, prevWrong: 2 },
+            { num: "100", q: "Which sentence has the CORRECT WORD ORDER?", opts: ["A) In Europe and the US are entrepreneurs, many optimistic despite the crisis economic about the year ahead", "B) Many entrepreneurs in Europe and the US are optimistic about the year ahead, despite the economic crisis", "C) Despite the crisis year ahead, many in Europe and about the US entrepreneurs are optimistic.", "D) About the entrepreneurs, US and Europe are in optimistic crisis, despite the many year ahead."], ans: 1, prevWrong: 2 },
+            { num: "82", q: "I know you didn't break the window. It ...... by Emma's sister.", opts: ["A) broke", "B) broken", "C) is broken", "D) was broken"], ans: 3, prevWrong: 0 },
+            { num: "88", q: "Did you ask Mike if he usually ...... after school?", opts: ["A) slept", "B) sleep", "C) sleeping", "D) has slept"], ans: 0, prevWrong: 1 },
+            { num: "80", q: "I've been searching for the course book everywhere. ....... you find it anywhere?", opts: ["A) did", "B) are", "C) were", "D) have"], ans: 0, prevWrong: 3 },
+            { num: "85", q: "If I spoke French, I ........... help the people, but I only speak English.", opts: ["A) can", "B) could", "C) must", "D) will"], ans: 1, prevWrong: 0 },
+            { num: "78", q: "Before he ....... a decision, Ted checked all the facts.", opts: ["A) had made", "B) made", "C) has made", "D) makes"], ans: 1, prevWrong: 0 },
+            { num: "86", q: "Judy acts as if she ............ upset, while in fact she just wants to attract your attention", opts: ["A) had been", "B) has been", "C) was", "D) is"], ans: 3, prevWrong: 0 },
+            { num: "78", q: "When the food finally arrived, the people...........for it for hours.", opts: ["A) were going to wait", "B) had been waiting", "C) were waiting", "D) waited"], ans: 1, prevWrong: 2 },
+            { num: "82", q: "By the time I ............ in Jeddah, I was hungry. Therefore, I bought a pizza.", opts: ["A) arrived", "B) am arriving", "C) have arrived", "D) had been arriving"], ans: 0, prevWrong: 2 },
+            { num: "80", q: "When Fatima got off the train, I knew we ............ a few weeks before.", opts: ["A) met", "B) had met", "C) have met", "D) used to meet"], ans: 1, prevWrong: 0 },
+            { num: "79", q: "Tom's hardly eaten anything all day, ............ he?", opts: ["A) is", "B) isn't", "C) hasn't", "D) has"], ans: 3, prevWrong: 1 },
+            { num: "76", q: "How long has Judy been married ............ Jack?", opts: ["A) with", "B) for", "C) by", "D) to"], ans: 3, prevWrong: 0 },
+            { num: "71", q: "We stayed at two hotels. ............... of them was very comfortable.", opts: ["A) Neither", "B) Either", "C) Both", "D) Each"], ans: 0, prevWrong: 1 },
+            { num: "82", q: "My wife's flight had just landed when I arrived at the airport. She ............... gone for three weeks.", opts: ["A) has been", "B) was", "C) had been", "D) had been seen"], ans: 2, prevWrong: 0 },
+            { num: "82", q: "We'd been talking for a couple of hours when Jenny suddenly ...............up and went to bed.", opts: ["A) stood", "B) had stood", "C) was standing", "D) had been standing"], ans: 0, prevWrong: 2 },
+            { num: "79", q: "Ted doesn't feed his baby daughter ............ his wife does.", opts: ["A) as carefully", "B) as carefully as", "C) as careful as", "D) as carful"], ans: 1, prevWrong: 2 },
+            { num: "70", q: "German is still not a very popular language among............", opts: ["A) French", "B) no French", "C) the French", "D) any French"], ans: 2, prevWrong: 0 },
+            { num: "84", q: "Then one day, ............ hard all her life, Mrs. Davis finally retired.", opts: ["A) had been working", "B) being worked", "C) having worked", "D) will have been working"], ans: 2, prevWrong: 0 },
+            { num: "81", q: "Our son Paul hopes ....... at his grandparents for another week.", opts: ["A) to staying", "B) staying", "C) to stay", "D) stay"], ans: 2, prevWrong: 1 },
+            { num: "80", q: "Ali and Ahmed think this is the best chocolate they ............", opts: ["A) ever eat", "B) had ever eaten", "C) have ever eaten", "D) would have ever eaten"], ans: 2, prevWrong: 1 },
+            { num: "61", q: "The computer costs so ...... money that the family decided not to buy it.", opts: ["A) a lot", "B) few", "C) many", "D) much"], ans: 3, prevWrong: 0 },
+            { num: "88", q: "Are you leaving now? I thought you said you............ going to stay till tomorrow.", opts: ["A) will be", "B) are", "C) were", "D) have been"], ans: 2, prevWrong: 1 },
+            { num: "82", q: "He was so angry, he refused ............to me.", opts: ["A) talk", "B) to talk", "C) talking", "D) to talking"], ans: 1, prevWrong: 0 },
+            { num: "90", q: "Fawzia behaves as if she ............ everyone, while in fact she's only been with the company for a week.", opts: ["A) had known", "B) has known", "C) knows", "D) knew"], ans: 3, prevWrong: 0 },
+            { num: "83", q: "Mark was so hungry that he stopped ............ a sandwich.", opts: ["A) to having", "B) to have", "C) having", "D) have"], ans: 1, prevWrong: 2 },
+            { num: "84", q: "At the age of eighty, ............ since he was sixteen, Roger finally retired", opts: ["A) had been working", "B) being worked", "C) having worked", "D) done it fixed"], ans: 2, prevWrong: 0 },
+            { num: "85", q: "If Dave decided to sell his car, I think I ............ it.", opts: ["A) bought", "B) will buy", "C) would've bought", "D) would buy"], ans: 3, prevWrong: 0 },
+            { num: "83", q: "I might need your help later on today. What ............... at 6 pm?", opts: ["A) will you be doing", "B) will you do", "C) do you do", "D) have you been doing"], ans: 0, prevWrong: 1 },
+            { num: "87", q: "I couldn't go out last night ............ a severe sandstorm.", opts: ["A) owing to", "B) despite", "C) unlike", "D) along with"], ans: 0, prevWrong: 1 },
+            { num: "Dialogue", q: "Mary: I need to buy a coat.\nFriend: No need, I bought............that I never wear.", opts: ["A) some", "B) this", "C) one", "D) any"], ans: 2, prevWrong: 1 },
+            { num: "66", q: "In which sentence is all PUNCTUATION correct?", opts: ["A) There are wonderful places to visit in Saudi Arabia. If you have the chance to travel, be sure to visit Alula, Umluj and Jeddah.", "B) There are wonderful places to visit in Saudi Arabia. If you have the chance to travel be sure not to miss Alula, Umluj and Jeddah.", "C) There are wonderful places to visit in Saudi Arabia. If you have the chance to travel, be sure not to miss Alula, Umluj and Jeddah.", "D) There are wonderful places to visit in Saudi Arabia: If you have the chance to travel, be sure not to miss Alula, Umluj and Jeddah."], ans: 2, prevWrong: 1 },
+            { num: "90", q: "Mrs. Davis: How are your studies going, Fatima?\nFatima: I beg your pardon?\nMrs. Davis: I asked how.............", opts: ["A) your studies be going", "B) are your studies going", "C) your studies were going", "D) were your studies going"], ans: 2, prevWrong: 3 },
+            { num: "83", q: "Just as I sat down to start reading, I heard............. I think it was the air-conditioning.", opts: ["A) noise", "B) a noise", "C) one noise", "D) any noise"], ans: 1, prevWrong: 0 },
+            { num: "76", q: "Steve: Mr. Smith gave Peter an F on his essay.\nMark: .............he? That's terrible!", opts: ["A) Did", "B) Has", "C) Didn't", "D) Hasn't"], ans: 0, prevWrong: 1 },
+            { num: "85", q: "First Mrs. Carter and later Mrs. Johnson introduced ............... to the students.", opts: ["A) by themselves", "B) by herself", "C) themselves", "D) herself"], ans: 3, prevWrong: 0 },
+            { num: "84", q: "Amy: Is that your niece's son over there?\nDan: Yes, ............. is.", opts: ["A) that", "B) she", "C) he", "D) it"], ans: 2, prevWrong: 0 },
+            { num: "81", q: "You don't ............... give him any money. He has a good job now.", opts: ["A) must", "B) need", "C) ought to", "D) have to"], ans: 3, prevWrong: 0 },
+            { num: "88", q: "What are you doing at work, Linda? Your daughter told me you ............... on holiday.", opts: ["A) are", "B) have been", "C) are being", "D) were"], ans: 3, prevWrong: 0 },
+            { num: "Dialogue", q: "Steve: None of the hotel staff spoke English.\nDan: .............? That must've been very upsetting.", opts: ["A) Did they", "B) Didn't they", "C) Hadn't they", "D) Had they"], ans: 0, prevWrong: 1 },
+            { num: "86", q: "Let's go on holiday, o..........?", opts: ["A) shall we", "B) would we", "C) will we", "D) do we"], ans: 0, prevWrong: 2 },
+            { num: "91", q: "Take a sweater in case it ............... cold at night.", opts: ["A) got", "B) gets", "C) will get", "D) would get"], ans: 1, prevWrong: 0 },
+            { num: "90", q: "My grandfather travelled a lot when he was younger. He is believed to ............... over a hundred countries", opts: ["A) visit", "B) be visiting", "C) have visited", "D) have been visited"], ans: 2, prevWrong: 3 },
+            { num: "89", q: "Cathy and I ................in the train for several hours when, finally, the sun came out.", opts: ["A) had been walking", "B) have been walking", "C) were walking", "D) had walked"], ans: 0, prevWrong: 1 },
+            { num: "27", q: "Mr. Carter wasn't used to...........what to do.", opts: ["A) be told", "B) being told", "C) be telling", "D) being telling"], ans: 1, prevWrong: 0 },
+            { num: "19", q: "CHOOSE THE CORRECT ORDER to make the following sentence into a paragraph:\n(1) Then, pour it into a cup with a teabag and wait a couple of minutes.\n(2) Now, you can remove the teabag and drink it.\n(3) First, you heat the water.\n(4) Making a cup of tea is easy.", opts: ["A) (4), (3), (2), (1)", "B) (4), (1), (2), (3)", "C) (3), (1), (4), (2)", "D) (4), (3), (1), (2)"], ans: 3, prevWrong: 0 },
+            { num: "38", q: "In which sentence is all PUNCTUATION correct?", opts: ["A) There are many things you need to succeed in the business world, It helps to have a good plan, starting money and support of family.", "B) There are many things you need to succeed in the business world, It helps to have a good plan starting money and support of family.", "C) There are many things you need to succeed in the business world. It helps to have a good plan starting money and support of family.", "D) There are many things you need to succeed in the business world; it helps to have a good plan, starting money and support of family."], ans: 3, prevWrong: 0 },
+            { num: "36", q: "In no way..................to lend money to anyone.", opts: ["A) do I agree", "B) do agree I", "C) I agree", "D) agree I"], ans: 0, prevWrong: 2 },
+            { num: "34", q: "My father always 'cut his beard himself. Never did he.................by someone else.", opts: ["A) get it cut", "B) have it cutting", "C) make it cutting", "D) do it cut"], ans: 0, prevWrong: 1 }
+        ];
+
+        const readingQuestions = [
+            { num: "44", q: "Which Paragraph discusses the origins of indoor air pollution?", opts: ["A) Paragraph (1)", "B) Paragraph (2)", "C) Paragraph (3)", "D) Paragraph (4)"], ans: 0, prevWrong: 2 },
+            { num: "34", q: "Which of the following sentences is NOT TRUE according to Paragraph (2)?", opts: ["A) In order to STUDY animals sleeping manners, the EEG must be attached to their bodies.", "B) Scientists have used the EEG to study animals' sleeping behavior.", "C) Fish and snakes sleep with their eyes open because they DON'T LIKE to close them.", "D) Snakes have some resting periods during the day."], ans: 2, prevWrong: 3 },
+            { num: "54", q: "In Paragraph (3), which of the following is NOT mentioned as a difference between knitting and crocheting?", opts: ["A) Products that are crocheted are always done by hand", "B) Crocheting has one active loop while knitting has several.", "C) Only knitting can be used to make socks and sweaters", "D) Knitting has been mechanized while crocheting has NOT"], ans: 1, prevWrong: 2 },
+            { num: "38", q: "What key information is given about Howard Hughes in Paragraph (3)?", opts: ["A) He was a very rich man.", "B) He always wore white gloves", "C) He was scared of dying at an early age.", "D) He became ill because of his assistants"], ans: 0, prevWrong: 2 },
+            { num: "30", q: "Which sentence gives the main idea of Paragraph (2)?", opts: ["A) Observations can be qualitative or quantitative.", "B) Qualitative observations describe properties or occurrences in ways that do not rely on numbers.", "C) Often, this data can be collected through observation.", "D) Outside air temperature is colder during the winter season and table salt is a crystalline solid"], ans: 1, prevWrong: 0 },
+            { num: "60", q: "According to the passages, what are the biggest problems in healthcare in low-income and high-income countries respectively?", opts: ["A) limited availability and high cost", "B) poor sanitation and sedentary lifestyles", "C) limited access to medical education and lack of insurance", "D) lack of medical professionals and rising income inequality"], ans: 2, prevWrong: 3 },
+            { num: "28", q: "What does Paragraph (1) say about Britain's Industrial Revolution?", opts: ["A) It made England into the strongest country in the world", "B) It decreased the number of people living in the countryside", "C) It caused many people around the country to lose their homes", "D) It increased poverty in different parts of Europe, such as Italy"], ans: 1, prevWrong: 2 },
+            { num: "35", q: "What is one important idea about today's Mars that the writer mentions in Paragraphs (1-2)?", opts: ["A) orbiting spacecraft", "B) rocky minerals", "C) rainfall", "D) valleys"], ans: 3, prevWrong: 2 },
+            { num: "33", q: "What does the writer want to show with the examples of Gillette, Coca-Cola, and Travis Perkins in Paragraph (1)?", opts: ["A) That they pay careful attention to the quality of their products.", "B) That market and product orientation are clearly connected", "C) That they get the right product for their customers.", "D) That they get the products right."], ans: 2, prevWrong: 3 },
+            { num: "30", q: "What important idea connected to product-oriented firms does the writer mention in Paragraph (1)?", opts: ["A) Their customers want and need their products.", "B) They make products based on what they want and need.", "C) They pay more attention to what they make and services that help it.", "D) They need skills, knowledge, and systems in order to make products."], ans: 1, prevWrong: 2 },
+            { num: "57", q: "What can we understand about the printing press from Paragraph (4)?", opts: ["A) That it had several negative effects.", "B) That it led to advances in knowledge.", "C) That it spread quickly in various countries.", "D) That it changed the structure of the society."], ans: 1, prevWrong: 0 },
+            { num: "48", q: "What two things did the Zimbabwean government do that increased hyperinflation?", opts: ["A) did not raise taxes and abandoned the Zimbabwean dollar", "B) printed too much money and allowed the people to use foreign currency", "C) printed too much money and enacted price controls resulting in black markets", "D) enacted price controls resulting in black markets and allowed the people to use foreign currency"], ans: 1, prevWrong: 2 },
+            { num: "34", q: "According to the passage, what made intellectual property law grow and develop?", opts: ["A) a request by authors and scientists", "B) the common use of modern technology", "C) the need to limit people's right to their own work", "D) an effort to make science and arts more professional"], ans: 1, prevWrong: 3 },
+            { num: "38", q: "Which word or words can we use to replace the word so in Paragraph (1)?", opts: ["A) In the same way", "B) In other words", "C) However", "D) Due to"], ans: 3, prevWrong: 2 },
+            { num: "59", q: "What is the difference between scientists who believe viruses are dead and those who think they are alive?", opts: ["A) Scientists who believe viruses are dead say viruses are an ancient form of bacteria.", "B) Scientists who believe viruses are dead say viruses CANNOT produce their own proteins.", "C) Scientists who believe viruses are dead say viruses CANNOT rely on hosts to make proteins.", "D) Scientists who believe viruses are dead say viruses are like seeds that grow and reproduce."], ans: 1, prevWrong: 3 },
+            { num: "30", q: "Why does the writer use the phrase \"For instance\" in Paragraph (5)?", opts: ["A) to show how the new technique can be used in different ways", "B) to give examples of patients who can use the new technique", "C) to show that the new and old techniques are different", "D) to explain one difficulty in using the new technique"], ans: 1, prevWrong: 0 },
+            { num: "37", q: "What does the writer think is an added advantage of ISO certification?", opts: ["A) He thinks many customers will only want to do business with ISO certified companies.", "B) He thinks ISO certification is special because business must use independent auditors and laboratory testing to prove that they meet the standards.", "C) He thinks the process of certification helps companies save money by improving their processes.", "D) He thinks that having 161-member countries approve the ISO standards makes the standards prevalent around the world."], ans: 2, prevWrong: 0 },
+            { num: "29", q: "What is one idea related to the Mongols that the writer mentions in Paragraph (1)?", opts: ["A) They disliked the rain.", "B) They controlled only Asia.", "C) They used to battle on horseback.", "D) Tree ring scientists study Mongol history."], ans: 0, prevWrong: 2 },
+            { num: "36", q: "Which word can we use to replace the word so in Paragraph (3)?", opts: ["A) Particularly", "B) Though", "C) Although", "D) Afterwards"], ans: 3, prevWrong: 2 },
+            { num: "46", q: "What two things could increase heat waves in European cities?", opts: ["A) Wildfires and pollution", "B) Drought and low usage of air conditioning", "C) Widespread flooding and carbon emissions", "D) The urban heat island effect and more usage of air conditioning"], ans: 3, prevWrong: 1 },
+            { num: "36", q: "Which word can we use to replace \"Thus\" in Paragraph (1)?", opts: ["A) Particularly", "B) However", "C) Therefore", "D) Though"], ans: 2, prevWrong: 1 },
+            { num: "35", q: "Why does the writer use the word \"However\" in Paragraph (2)?", opts: ["A) To show that just-in-time systems are actually useful.", "B) To explain the process of just-in-time systems.", "C) To give an example of just-in-time systems.", "D) To list the benefits of just-in-time systems."], ans: 0, prevWrong: 3 },
+            { num: "28", q: "What is one important idea related to advertisements that the writer mentions in Paragraph (1)?", opts: ["A) that they existed thousands of years ago", "B) that they make us want to buy things", "C) that they may change our views", "D) that they are found in all places"], ans: 1, prevWrong: 2 },
+            { num: "60", q: "What do passages A and B say about a private limited company obtaining capital investment?", opts: ["A) It can sell shares to the general public and expand more rapidly than a sole trader.", "B) It must become a (Pty) Ltd company if it needs really large sums for rapid expansion.", "C) It can raise more than a sole trader, but it is difficult to raise extremely large sums.", "D) It must offer new shares to family and friends before offering them to the general public."], ans: 2, prevWrong: 1 },
+            { num: "28", q: "What is one important idea that the writer mentions about scarcity?", opts: ["A) lack of resources", "B) how wealth is distributed", "C) a result of microeconomics", "D) a choice we make in business only"], ans: 0, prevWrong: 1 },
+            { num: "30", q: "What is the main topic of the passage?", opts: ["A) the goal of advertising", "B) the harms of advertising", "C) the history of advertising", "D) The importance of advertising"], ans: 0, prevWrong: 3 },
+            { num: "32", q: "What does Paragraph (3) say about descriptive writing?", opts: ["A) It deals with paintings and art.", "B) It sometimes appears in works of nonfiction.", "C) It includes the writer trying to convince the audience.", "D) It contains a writer's explanation of the scene for the audience."], ans: 1, prevWrong: 3 },
+            { num: "22", q: "Who was the first to ride the Pony?", opts: ["A) Aubrey", "B) Danie", "C) Adam", "D) Christopher"], ans: 0, prevWrong: 1 },
+            { num: "30", q: "At which conferences did the three powers split Germany?", opts: ["A) Cairo and Tehran", "B) Yalta and Potsdam", "C) Berlin and Soviet Union", "D) The United States, the United Kingdom, and France"], ans: 1, prevWrong: 2 },
+            { num: "25", q: "When did they discover gold in California?", opts: ["A) 1859", "B) 1848", "C) 1860", "D) 1850"], ans: 1, prevWrong: 0 },
+            { num: "45", q: "According to Paragraph (1), the test was given to check the........... of the speech", opts: ["A) Length", "B) Delivery", "C) Suitability", "D) Comprehension"], ans: 3, prevWrong: 2 },
+            { num: "59", q: "Penicillin was discovered by .............", opts: ["A) A team of researchers at Oxford University", "B) A team of Australian researchers", "C) Fleming", "D) Florey"], ans: 2, prevWrong: 0 },
+            { num: "34", q: "What does the passage say about the New Deal?", opts: ["A) It increased the number of business-es.", "B) It caused some people to lose money.", "C) It was the result of Social Security.", "D) It helped to improve the US economy."], ans: 3, prevWrong: 0 },
+            { num: "27", q: "Which of these was the surname of a famous Pony Express rider?", opts: ["A) Autrey", "B) Russell", "C) Waddell", "D) Cody"], ans: 3, prevWrong: 0 },
+            { num: "26", q: "How long did a stagecoach take to travel from New York to California?", opts: ["A) A month", "B) Two months", "C) 24 days", "D) 10 days"], ans: 2, prevWrong: 0 },
+            { num: "53", q: "What two words does the writer use to talk about 14th century industry?", opts: ["A) farming and chefs", "B) agriculture and retailers", "C) retailers and chefs", "D) farming and agriculture"], ans: 1, prevWrong: 3 },
+            { num: "31", q: "What is the main idea of passage?", opts: ["A) Sleeping well is important for footballers.", "B) Bad pillows can make your neck hurt.", "C) A sleep routine is more important than a mattress.", "D) Footballers should go to bed early."], ans: 2, prevWrong: 0 },
+            { num: "29", q: "What does Paragraph (2) say about the way digital images can be used?", opts: ["A) They can be used to record hard copy documents.", "B) They can be used as identification documents.", "C) They can be used instead of passports.", "D) They can be used to recognize faces."], ans: 0, prevWrong: 1 },
+            { num: "46", q: "Which vaccines send genetic instructions to cells to create a specific protein that fights the coronavirus?", opts: ["A) Pfizer and Moderna", "B) Moderna and AstraZeneca", "C) Pfizer and Sinovac", "D) AstraZeneca and Johnson & Johnson"], ans: 0, prevWrong: 1 },
+            { num: "55", q: "What can we understand from Pages A and B about controlling inflation through money supply?", opts: ["A) It can be done by banks lending less money to members of the public", "B) It can be controlled because people want to keep their money and save it.", "C) It can be done by increasing the amount banks lend and decreasing bond prices.", "D) It can be done through increasing interest rates and reducing money in circulation."], ans: 3, prevWrong: 0 },
+            { num: "36", q: "Which word can we use to replace the word \"also\" in Paragraph (4)?", opts: ["A) thus", "B) as well", "C) although", "D) for instance"], ans: 1, prevWrong: 2 },
+            { num: "35", q: "Which word can we use to replace the word \"However\" in Paragraph (2)?", opts: ["A) Though", "B) Therefore", "C) Particularly", "D) In addition"], ans: 0, prevWrong: 1 },
+            { num: "51", q: "what is one difference between critical thinking and problem solving?", opts: ["A) Problem solving is more enjoyable than critical thinking.", "B) Critical thinking requires knowledge of formal math.", "C) One uses words while the other uses numbers.", "D) One is based on real world knowledge."], ans: 3, prevWrong: 1 },
+            { num: "35", q: "Which word or words can we use to replace the word \"therefore\" in Paragraph (2)?", opts: ["A) instead", "B) besides", "C) in addition", "D) as a result"], ans: 3, prevWrong: 0 },
+            { num: "50", q: "How is the modern view of good management different from the traditional view?", opts: ["A) It focuses only on making profits.", "B) It considers the benefit of all stakeholders.", "C) It carefully assigns roles within the company.", "D) It develops specific strategies for improvement."], ans: 1, prevWrong: 0 },
+            { num: "49", q: "Which of the following is an OPINION?", opts: ["A) Milton Friedman won the Nobel Prize.", "B) One aim of a company is to make a profit for its stockholders.", "C) Business education focused on the profit only approached for a few years.", "D) Maximizing profit represents the only social responsibility of a company."], ans: 3, prevWrong: 1 },
+            { num: "2", q: "Which of the theories believe that exports should be higher than imports?", opts: ["A) Mercantilism only", "B) Absolute advantage only", "C) Mercantilism and absolute advantage", "D) Promoting exports and increased efficiencies"], ans: 0, prevWrong: 2 },
+            { num: "1", q: "Which theories believe that a nation's wealth is the same as its gold and silver?", opts: ["A) Mercantilism only", "B) Promoting exports only", "C) Absolute advantage only", "D) Mercantilism and absolute advantage"], ans: 0, prevWrong: 1 },
+            { num: "1", q: "According to the passage, what are kinds of wage taxes?", opts: ["A) Income tax and social security tax", "B) Social security tax and medicare taxes", "C) Purchase and medicare taxes", "D) Payroll and wealth taxes."], ans: 1, prevWrong: 2 },
+            { num: "3", q: "Which theories believe that countries should have no limits on imports and exports?", opts: ["A) Mercantilism and absolute advantage", "B) Protectionism and specialization", "C) Absolute advantage only", "D) Mercantilism only"], ans: 2, prevWrong: 1 }
+        ];
+
+        let currentSection = 'grammar';
+        let currentIndex = 0;
+        let answered = false;
+
+        function getActiveList() {
+            return currentSection === 'grammar' ? grammarQuestions : readingQuestions;
+        }
+
+        function changeSection(section) {
+            currentSection = section;
+            currentIndex = 0;
+            answered = false;
+
+            document.getElementById('tab-grammar').classList.toggle('active', section === 'grammar');
+            document.getElementById('tab-reading').classList.toggle('active', section === 'reading');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            answered = false;
+            const list = getActiveList();
+            const q = list[currentIndex];
+
+            // تحديث شريط التقدم
+            const progress = ((currentIndex + 1) / list.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            // النصوص
+            document.getElementById('question-count').innerText = `السؤال ${currentIndex + 1} من ${list.length}`;
+            document.getElementById('original-num').innerText = `الرمز الأصلي: #${q.num}`;
+            document.getElementById('question-text').innerHTML = q.q.replace(/\n/g, '<br>');
+            document.getElementById('feedback-msg').innerText = '';
+            document.getElementById('next-btn').style.display = 'none';
+
+            // بناء الخيارات
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            q.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<span>${opt}</span><span id="badge-${idx}"></span>`;
+                btn.onclick = () => selectAnswer(idx);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(userPick) {
+            if (answered) return;
+            answered = true;
+
+            const list = getActiveList();
+            const q = list[currentIndex];
+            const buttons = document.querySelectorAll('.option-btn');
+
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true; // تعطيل الضغط بعد الإجابة
+                const badge = document.getElementById(`badge-${idx}`);
+
+                // 1. تلوين الإجابة الصحيحة بالأصفر
+                if (idx === q.ans) {
+                    btn.classList.add('correct-ans');
+                    badge.innerHTML = `<span class="status-badge badge-correct">الإجابة الصحيحة ✓</span>`;
+                }
+
+                // 2. إظهار الخطأ القديم بالأحمر المشطوب
+                if (idx === q.prevWrong) {
+                    btn.classList.add('prev-wrong-ans');
+                    if (idx !== q.ans) {
+                        badge.innerHTML += `<span class="status-badge badge-prev">خطؤك السابق ✕</span>`;
+                    }
+                }
+
+                // 3. تمييز اختيار المستخدم الحالي بإطار أزرق
+                if (idx === userPick) {
+                    btn.classList.add('user-picked');
+                    if (idx !== q.ans && idx !== q.prevWrong) {
+                        badge.innerHTML += `<span class="status-badge badge-user">اختيارك الحالي</span>`;
+                    }
+                }
+            });
+
+            // إظهار زر التالي
+            document.getElementById('next-btn').style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            const list = getActiveList();
+            if (currentIndex < list.length - 1) {
+                currentIndex++;
+                loadQuestion();
+            } else {
+                showQuizEnd();
+            }
+        }
+
+        function showQuizEnd() {
+            const card = document.getElementById('quiz-card');
+            card.innerHTML = `
+                <div class="result-box">
+                    <h2>🎉 أحسنت! أنهيت هذا القسم بالكامل.</h2>
+                    <p style="margin-bottom: 20px; font-size: 1.1rem;">تمت مراجعة جميع الأسئلة والحلول وتثبيت الإجابات الصحيحة.</p>
+                    <button class="tab-btn active" style="max-width: 250px; margin: 0 auto;" onclick="changeSection(currentSection === 'grammar' ? 'reading' : 'grammar')">
+                        الانتقال للقسم الآخر ←
+                    </button>
+                </div>
+            `;
+        }
+
+        // بدء الكويز
+        loadQuestion();
+    </script>
+</body>
+</html>
